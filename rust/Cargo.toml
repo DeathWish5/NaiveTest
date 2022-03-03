@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "gettime",
+    "proc_switch",
+    "thread_switch",
+    "coroutine_switch",
+]
