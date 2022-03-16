@@ -4,7 +4,7 @@ P := 1
 PERF := 
 
 ifeq (P, 1)
-	PERF := sudo perf stat -e dTLB-load-misses,iTLB-load-misses,cs,cache-misses,sched:sched_switch
+	PERF := sudo perf stat -e dTLB-load-misses,iTLB-load-misses,cs,cache-misses
 endif
 
 %.o : %.cpp

@@ -34,7 +34,6 @@ const int TIMES = 10000000;
 
 void switch_test(const char name[])
 {
-    // set_sched();
     sched_yield();
     timespec start = gettime();
     for (int i = 0; i < TIMES; i++)
@@ -54,7 +53,7 @@ int get_priority()
 
 int main(int argc, char *argv[])
 {
-    POLICY = (argc == 2) ? atoi(argv[1]) : 2;
+    POLICY = (argc == 2) ? atoi(argv[1]) : 1;
     assert(POLICY >= 0 && POLICY < MAX);
     cout << "Sched Policy: " << SCHED_NAME[POLICY] << endl;
     CPU_ZERO(&my_cpu_set);
@@ -64,11 +63,10 @@ int main(int argc, char *argv[])
     set_sched();
     if (fork() == 0)
     {
-        // set_sched();
+        set_sched();
         switch_test("C");
         exit(0);
     }
-    // set_sched();
     switch_test("F");
     wait(NULL);
     return 0;

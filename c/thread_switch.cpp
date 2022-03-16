@@ -33,11 +33,11 @@ void set_thread_sched(pthread_t t)
 void *switch_(void *_id)
 {
     int id = *(int *)_id;
-    sched_yield();
+    pthread_yield();
     timespec start = gettime();
     for (int i = 0; i < TIMES; i++)
     {
-        sched_yield();
+        pthread_yield();
     }
     timespec end = gettime();
     cout << id << " " << TIMES << " switchs delta = " << (end - start) / TIMES << endl;
@@ -46,7 +46,7 @@ void *switch_(void *_id)
 
 int main(int argc, char *argv[])
 {
-    POLICY = (argc == 2) ? atoi(argv[1]) : 2;
+    POLICY = (argc == 2) ? atoi(argv[1]) : 1;
     assert(POLICY >= 0 && POLICY < MAX);
     cout << "Sched Policy: " << SCHED_NAME[POLICY] << endl;
     CPU_ZERO(&my_cpu_set);

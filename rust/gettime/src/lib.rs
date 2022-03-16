@@ -2,8 +2,8 @@ use libc::sched_param;
 use nix::sys::time::TimeSpec;
 use nix::time::{clock_gettime, ClockId};
 use numeric_enum_macro::*;
+use spin::Mutex;
 use std::io::Write;
-
 #[allow(unsafe_code)]
 extern crate libc;
 
@@ -27,10 +27,40 @@ pub fn get_ns() -> TimeSpec {
 
 pub fn proc_set_prio() {
     let para: sched_param = sched_param {
-        sched_priority: unsafe { libc::sched_get_priority_max(libc::SCHED_RR) },
+        sched_priority: unsafe { libc::sched_get_priority_max(libc::SCHED_FIFO) },
     };
-    if unsafe { libc::sched_setscheduler(0, libc::SCHED_RR, &para) } != 0 {
+    if unsafe { libc::sched_setscheduler(0, libc::SCHED_FIFO, &para) } != 0 {
         println!("Set scheduler failed. Plz run in root mode.");
+    }
+    println!(
+        "scheduler = {}, priority = {}",
+        "SCHED_FIFO", para.sched_priority
+    );
+    pin_cpu();
+}
+
+pub fn pin_cpu() {
+    use nix::sched::{sched_setaffinity, CpuSet};
+    use nix::unistd::Pid;
+    let cpu = unsafe { libc::sched_getcpu() };
+    let mut cpu_set = CpuSet::new();
+    cpu_set.set(cpu as _).unwrap();
+    sched_setaffinity(Pid::from_raw(0), &cpu_set).unwrap();
+    println!("Pin cpu @ {}", cpu);
+}
+
+const BUF_SIZE: usize = 0x100 * 64;
+
+lazy_static::lazy_static! {
+    static ref BUF0: Mutex<[u8; BUF_SIZE]> = Mutex::new([0; BUF_SIZE]);
+    static ref BUF1: Mutex<[u8; BUF_SIZE]> = Mutex::new([0; BUF_SIZE]);
+}
+
+pub fn work_load(idx: usize, id: usize) {
+    let mut buf = if id == 0 { BUF0.lock() } else { BUF1.lock() };
+    let idx = idx % 64;
+    for i in 0..0x100 {
+        buf[idx * 0x100 + i] += 1;
     }
 }
 

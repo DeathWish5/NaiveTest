@@ -12,3 +12,5 @@ nix = "0.22"
 env_logger = { version = "0.8" }
 gettime = { path = "../gettime" }
 tokio = { version = "1", features = ["full"] }
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
+spin = "0.9"

@@ -6,10 +6,12 @@ use gettime::*;
 const TIMES: u64 = 10000000;
 
 fn swtich_test(name: &'static str) {
-    proc_set_prio();
+    let id = if name == "F" { 0 } else { 1 };
     sched_yield().unwrap();
+    println!("work on buf[{}]", id);
     let start = get_ns();
-    for _ in 0..TIMES {
+    for i in 0..TIMES {
+        gettime::work_load(i as _, id);
         sched_yield().unwrap();
     }
     let end = get_ns();
@@ -23,6 +25,7 @@ fn swtich_test(name: &'static str) {
 
 fn main() {
     init_logger();
+    proc_set_prio();
     match unsafe { fork() } {
         Ok(ForkResult::Parent { .. }) => swtich_test("F"),
         Ok(ForkResult::Child) => swtich_test("C"),
