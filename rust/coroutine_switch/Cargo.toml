@@ -14,3 +14,6 @@ gettime = { path = "../gettime" }
 tokio = { version = "1", features = ["full"] }
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 spin = "0.9"
+woke = "0.0.2"
+# executor = { git = "https://github.com/rcore-os/executor" }
+# futures = { version = "0.3", default-features = false, features = ["alloc", "async-await"] }

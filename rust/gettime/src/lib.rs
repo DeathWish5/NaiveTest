@@ -1,9 +1,10 @@
 use libc::sched_param;
 use nix::sys::time::TimeSpec;
 use nix::time::{clock_gettime, ClockId};
-use numeric_enum_macro::*;
+// use numeric_enum_macro::*;
 use spin::Mutex;
 use std::io::Write;
+
 #[allow(unsafe_code)]
 extern crate libc;
 

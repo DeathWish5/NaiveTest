@@ -1,0 +1,12 @@
+[package]
+name = "user_thread_switch2"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+spin = "0.9"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
+user_thread_switch = { path = "../user_thread_switch" }
+nix = "0.22"

@@ -2,3 +2,5 @@
 *.o
 *.exe
 rust/**/target/
+Cargo.lock
+*.asm
