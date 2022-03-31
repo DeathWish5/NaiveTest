@@ -4,6 +4,7 @@ members = [
     "proc_switch",
     "thread_switch",
     "coroutine_switch",
+    "coroutine_switch2",
     "user_thread_switch",
     "user_thread_switch2",
     "coroutine_overhead",

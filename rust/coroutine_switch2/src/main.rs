@@ -1,6 +1,6 @@
+#![feature(async_closure)]
 use spin::Mutex;
 use std::result::Result;
-use user_thread_switch::*;
 type MyResult = Result<(), &'static str>;
 
 pub struct Matrix {
@@ -80,15 +80,7 @@ pub fn size_check(m1: &Matrix, m2: &Matrix, m3: &Matrix) -> MyResult {
     Ok(())
 }
 
-#[inline(never)]
-pub fn spawn_l1() {
-    for i in 0..N {
-        spawn(l2_thread, i)
-    }
-}
-
-#[inline(never)]
-pub fn l2_thread(i: usize) {
+async fn l2_coroutine(i: usize) {
     let nn: usize = N;
     for j in 0..nn {
         let m1 = M1.lock();
@@ -98,19 +90,47 @@ pub fn l2_thread(i: usize) {
         drop(m1);
         drop(m2);
         drop(m3);
-        sched_yield();
+        let y = YieldOnce {
+            y: AtomicBool::new(false),
+        };
+        y.await;
     }
-    exit();
 }
 
-#[inline(never)]
-pub fn spawn_l2() {
+pub fn spawn_l1() {
     for i in 0..N {
-        for j in 0..N {
-            spawn(l3_thread, i << 32 | j);
-        }
+        spawn(l2_coroutine(i))
     }
 }
+
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::task::{Context, Poll};
+
+struct YieldOnce {
+    y: AtomicBool,
+}
+
+impl Future for YieldOnce {
+    type Output = ();
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        if self.y.fetch_xor(true, Ordering::Relaxed) == true {
+            return Poll::Ready(());
+        }
+        cx.waker().wake_by_ref();
+        Poll::Pending
+    }
+}
+
+// #[inline(never)]
+// pub fn spawn_l2() {
+//     for i in 0..N {
+//         for j in 0..N {
+//             spawn(l3_thread, i << 32 | j);
+//         }
+//     }
+// }
 
 #[inline(never)]
 pub fn l3_thread(idx: usize) {
@@ -128,7 +148,6 @@ pub fn l3_thread(idx: usize) {
     drop(m1);
     drop(m2);
     drop(m3);
-    exit();
 }
 
 lazy_static::lazy_static! {
@@ -153,6 +172,13 @@ pub fn zero() -> TimeSpec {
     TimeSpec::from(std::time::Duration::from_secs(0))
 }
 
+mod executor;
+
+use executor::*;
+use gettime::*;
+
+const MAX_TASKS: usize = 1000 * 1000;
+
 fn main() {
     proc_set_prio();
     let mut m1 = M1.lock();
@@ -164,13 +190,15 @@ fn main() {
     let mut ave: TimeSpec = zero();
     for _ in 0..TIMES {
         spawn_l1();
-        // ave = ave + test(run_until_idle, "1000 threads");
-    }
-    println!("1000 threads delta = {}", ave / TIMES as _);
-    let mut ave: TimeSpec = zero();
-    for _ in 0..TIMES {
-        spawn_l2();
         ave = ave + test(run_until_idle, "1000 * 1000 threads");
     }
-    println!("1000*1000 threads delta = {}", ave / TIMES as _);
+    println!("1000*1000 coroutines delta = {}", ave / TIMES as _);
+    // let mut ave: TimeSpec = zero();
+    // println!("1000 threads delta = {}", ave / TIMES as _);
+    // let mut ave: TimeSpec = zero();
+    // for _ in 0..TIMES {
+    //     spawn_l2();
+    //     ave = ave + test(run_until_idle, "1000 * 1000 threads");
+    // }
+    // println!("1000*1000 threads delta = {}", ave / TIMES as _);
 }

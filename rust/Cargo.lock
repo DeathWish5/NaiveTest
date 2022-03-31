@@ -84,6 +84,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "coroutine_switch2"
+version = "0.1.0"
+dependencies = [
+ "gettime",
+ "lazy_static",
+ "nix",
+ "spin 0.9.2",
+ "woke",
+]
+
+[[package]]
 name = "env_logger"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

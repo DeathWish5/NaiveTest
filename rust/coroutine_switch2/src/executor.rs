@@ -1,5 +1,7 @@
 use lazy_static::*;
 
+extern crate alloc;
+
 use {
     alloc::{boxed::Box, sync::Arc},
     core::{
@@ -11,11 +13,15 @@ use {
     woke::{waker_ref, Woke},
 };
 
-const NUM: usize = 384;
+use super::MAX_TASKS;
+use std::collections::VecDeque;
+const NUM: usize = 1000;
 
 /// Executor holds a list of tasks to be processed
 pub struct Executor {
-    tasks: [Option<Arc<Task>>; NUM],
+    tasks: Vec<Option<Arc<Task>>>,
+    unused: VecDeque<usize>,
+    ready: Arc<Mutex<VecDeque<usize>>>,
     current: usize,
 }
 
@@ -50,17 +56,26 @@ impl Task {
 }
 
 impl Executor {
+    pub fn new() -> Self {
+        Self {
+            tasks: (0..MAX_TASKS).map(|i| NONE_TASK).collect(),
+            unused: (0..MAX_TASKS).collect(),
+            ready: Arc::new(Mutex::new(VecDeque::with_capacity(MAX_TASKS))),
+            current: usize::MAX,
+        }
+    }
     /// Add task for a future to the list of tasks
     fn add_task(&mut self, future: Pin<Box<dyn Future<Output = ()> + 'static + Send>>) {
-        let mut tasks = &mut self.tasks;
-        let mut task = tasks
-            .iter_mut()
-            .find(|t| t.is_none())
-            .expect("no available task.");
+        let loc = self.unused.pop_front().expect("no available task.");
+        let task = &mut self.tasks[loc];
+        if task.is_some() {
+            panic!("task isn't available");
+        }
         *task = Some(Arc::new(Task {
             future: Mutex::new(future),
             state: Mutex::new(true),
         }));
+        self.ready.lock().push_back(loc);
     }
 
     /// Give future to be polled and executed
@@ -77,22 +92,13 @@ impl Executor {
     }
 
     fn run_task(&mut self) -> bool {
-        let current = self.current;
-        let start = (current + 1) % NUM;
-        let mut cur = start;
-        let tasks = &self.tasks;
-        while tasks[cur].is_none() || tasks[cur].as_ref().unwrap().is_sleeping() {
-            cur = (cur + 1) % NUM;
-            if cur == start {
-                return false;
-            }
+        let next = self.ready.lock().pop_front();
+        if next.is_none() {
+            return false;
         }
-        let task = &tasks[cur].as_ref().unwrap().clone();
-        drop(tasks);
+        let cur = next.unwrap();
+        let task = &self.tasks[cur].as_ref().unwrap().clone();
         self.current = cur;
-        // println!("run task {}", cur);
-        // task.mark_sleep();
-        // make a waker for our task
         let waker = waker_ref(task);
         // poll our future and give it a waker
         let mut context = Context::from_waker(&*waker);
@@ -100,6 +106,15 @@ impl Executor {
         drop(task);
         if let Poll::Ready(_) = ret {
             self.tasks[self.current] = None;
+            self.unused.push_front(self.current);
+        } else {
+            let task = &self.tasks[cur].as_ref().unwrap();
+            if *task.state.lock() == true {
+                drop(task);
+                self.ready.lock().push_back(self.current);
+            } else {
+                panic!("QAQ, not supported");
+            }
         }
         true
     }
@@ -108,10 +123,7 @@ impl Executor {
 const NONE_TASK: Option<Arc<Task>> = None;
 
 lazy_static! {
-    static ref GLOBAL_EXECUTOR: Mutex<Executor> = Mutex::new(Executor {
-        tasks: [NONE_TASK; NUM],
-        current: NUM - 1,
-    });
+    static ref GLOBAL_EXECUTOR: Mutex<Executor> = Mutex::new(Executor::new());
 }
 
 /// Give future to global executor to be polled and executed.

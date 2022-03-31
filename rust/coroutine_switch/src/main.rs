@@ -126,7 +126,7 @@ impl Future for MyCountor {
 //     // );
 // }
 
-mod executor;
+pub mod executor;
 
 fn main() {
     proc_set_prio();

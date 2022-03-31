@@ -58,7 +58,7 @@ pub fn matrix_random(m: &mut Matrix) -> Result<(), &'static str> {
 
 const CACHE_SIZE: usize = 384 * 1000;
 const N: usize = 1000;
-const TIMES: usize = 5;
+const TIMES: usize = 50;
 
 mod coroutine;
 mod function;
@@ -90,24 +90,24 @@ fn main() {
     let mut m3 = Matrix::new(N);
     matrix_random(&mut m1).unwrap();
     matrix_random(&mut m2).unwrap();
-    // test(
-    //     || {
-    //         dot2(&m1, &m2, &mut m3).unwrap();
-    //     },
-    //     "FUNC2",
-    // );
-    // test(
-    //     || {
-    //         matrix_dot_plus(&m1, &m2, &mut m3).unwrap();
-    //     },
-    //     "BASE",
-    // );
     test(
         || {
-            dot1(&m1, &m2, &mut m3).unwrap();
+            dot2(&m1, &m2, &mut m3).unwrap();
         },
-        "FUNC",
+        "FUNC2",
     );
+    test(
+        || {
+            matrix_dot_plus(&m1, &m2, &mut m3).unwrap();
+        },
+        "BASE",
+    );
+    // test(
+    //     || {
+    //         dot1(&m1, &m2, &mut m3).unwrap();
+    //     },
+    //     "FUNC",
+    // );
     // let t1 = get_ns();
     // for _ in 0..TIMES {
     //     dot21(&m1, &m2, &mut m3).await.unwrap();
