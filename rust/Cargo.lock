@@ -57,7 +57,7 @@ name = "coroutine_overhead"
 version = "0.1.0"
 dependencies = [
  "gettime",
- "tokio",
+ "matrix",
 ]
 
 [[package]]
@@ -87,8 +87,10 @@ dependencies = [
 name = "coroutine_switch2"
 version = "0.1.0"
 dependencies = [
+ "coroutine_switch",
  "gettime",
  "lazy_static",
+ "matrix",
  "nix",
  "spin 0.9.2",
  "woke",
@@ -167,6 +169,10 @@ checksum = "6389c490849ff5bc16be905ae24bc913a9c8892e19b2341dbc175e14c341c2b8"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "matrix"
+version = "0.1.0"
 
 [[package]]
 name = "memchr"
@@ -465,6 +471,7 @@ name = "user_thread_switch2"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
+ "matrix",
  "nix",
  "spin 0.9.2",
  "user_thread_switch",

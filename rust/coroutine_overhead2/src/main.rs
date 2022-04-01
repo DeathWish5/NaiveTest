@@ -5,9 +5,6 @@ use std::arch::asm;
 
 const TIMES: usize = 4;
 
-// mod coroutine;
-// mod function;
-
 const LAYER: usize = 8;
 
 pub fn func() -> usize {

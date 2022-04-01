@@ -1,13 +1,6 @@
 use super::{DEFAULT_STACK_SIZE, MAX_TASKS};
 use spin::{Mutex, MutexGuard};
 use std::collections::VecDeque;
-pub struct Runtime {
-    tasks: Vec<Task>,
-    unused: VecDeque<usize>,
-    ready: VecDeque<usize>,
-    current: usize,
-    ctx: usize,
-}
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 enum State {
@@ -59,6 +52,14 @@ lazy_static::lazy_static! {
     pub static ref GLOBAL_RUNTIME: Mutex<Runtime> = Mutex::new(Runtime::new());
 }
 
+pub struct Runtime {
+    tasks: Vec<Task>,
+    unused: VecDeque<usize>,
+    ready: VecDeque<usize>,
+    current: usize,
+    ctx: usize,
+}
+
 impl Runtime {
     pub fn new() -> Self {
         Runtime {
@@ -105,45 +106,10 @@ impl Runtime {
     }
 }
 
-pub unsafe fn push_stack<T>(stack_top: usize, val: T) -> usize {
+unsafe fn push_stack<T>(stack_top: usize, val: T) -> usize {
     let stack_top = (stack_top as *mut T).sub(1);
     *stack_top = val;
     stack_top as _
-}
-
-pub fn get_current_runtime() -> MutexGuard<'static, Runtime> {
-    GLOBAL_RUNTIME.lock()
-}
-
-pub fn spawn(f: fn(arg: usize), arg: usize) {
-    let mut runtime = get_current_runtime();
-    runtime.spawn(f, arg);
-}
-
-/// switch to runtime, which would select an appropriate executor to run.
-pub fn sched_yield() {
-    let mut runtime = get_current_runtime();
-    let runtime_cx = runtime.get_context();
-    if let Some(task) = runtime.get_current_task() {
-        let task_cx = task.get_context();
-        drop(task);
-        drop(runtime);
-        // println!("      try to yield to runtime");
-        switch(task_cx as _, runtime_cx as _);
-        // println!("      yield return");
-    }
-}
-
-pub fn exit() {
-    let mut runtime = get_current_runtime();
-    let mut task = runtime.get_current_task().unwrap();
-    task.state = State::Available;
-    let id = task.id;
-    drop(task);
-    runtime.unused.push_front(id);
-    drop(runtime);
-    sched_yield();
-    unreachable!();
 }
 
 #[naked]
@@ -188,14 +154,6 @@ unsafe fn switch_inner(old: usize, new: usize) {
     )
 }
 
-/// This is where we start running our runtime. If it is our base task, we call yield until
-/// it returns false (which means that there are no tasks scheduled) and we are done.
-pub fn run_until_idle() {
-    COUNT.store(0, Ordering::Relaxed);
-    while run_task() {}
-    // println!("context switch number: {}", COUNT.load(Ordering::SeqCst));
-}
-
 fn run_task() -> bool {
     let mut runtime = get_current_runtime();
     if let Some(task) = runtime.get_current_task() {
@@ -205,14 +163,6 @@ fn run_task() -> bool {
             runtime.ready.push_back(id);
         }
     }
-    // let start = (current + 1) % MAX_TASKS;
-    // let mut pos = start;
-    // while runtime.tasks[pos].state != State::Ready {
-    //     pos = (pos + 1) % MAX_TASKS;
-    //     if pos == start {
-    //         return false;
-    //     }
-    // }
 
     let pos = runtime.ready.pop_front();
     if pos.is_none() {
@@ -242,4 +192,48 @@ static COUNT: AtomicUsize = AtomicUsize::new(0);
 fn switch(old: usize, new: usize) {
     COUNT.fetch_add(1, Ordering::Relaxed);
     unsafe { switch_inner(old, new) };
+}
+
+
+// public interface
+
+pub fn get_current_runtime() -> MutexGuard<'static, Runtime> {
+    GLOBAL_RUNTIME.lock()
+}
+
+pub fn spawn(f: fn(arg: usize), arg: usize) {
+    let mut runtime = get_current_runtime();
+    runtime.spawn(f, arg);
+}
+
+/// switch to runtime, which would select an appropriate executor to run.
+pub fn sched_yield() {
+    let mut runtime = get_current_runtime();
+    let runtime_cx = runtime.get_context();
+    if let Some(task) = runtime.get_current_task() {
+        let task_cx = task.get_context();
+        drop(task);
+        drop(runtime);
+        // println!("      try to yield to runtime");
+        switch(task_cx as _, runtime_cx as _);
+        // println!("      yield return");
+    }
+}
+
+pub fn exit() {
+    let mut runtime = get_current_runtime();
+    let mut task = runtime.get_current_task().unwrap();
+    task.state = State::Available;
+    let id = task.id;
+    drop(task);
+    runtime.unused.push_front(id);
+    drop(runtime);
+    sched_yield();
+    unreachable!();
+}
+
+pub fn run_until_idle() {
+    COUNT.store(0, Ordering::Relaxed);
+    while run_task() {}
+    // println!("context switch number: {}", COUNT.load(Ordering::SeqCst));
 }

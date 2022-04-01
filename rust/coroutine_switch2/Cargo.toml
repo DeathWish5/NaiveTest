@@ -11,3 +11,5 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 nix = "0.22"
 woke = "0.0.2"
 gettime = { path = "../gettime" }
+matrix = { path = "../matrix" }
+coroutine_switch = { path = "../coroutine_switch" }

@@ -10,3 +10,4 @@ spin = "0.9"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 user_thread_switch = { path = "../user_thread_switch" }
 nix = "0.22"
+matrix = { path = "../matrix" }

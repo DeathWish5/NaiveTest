@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "matrix",
     "gettime",
     "proc_switch",
     "thread_switch",

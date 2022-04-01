@@ -6,6 +6,11 @@ use std::mem;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+mod executor;
+use executor::*;
+
+const MAX_TASKS: usize = 1000 * 1000;
+
 const NUM: usize = 384;
 const TIMES: usize = 100;
 const CACHE_SIZE: usize = 384 * 1024;
@@ -95,38 +100,6 @@ impl Future for MyCountor {
         }
     }
 }
-
-// #[tokio::main(flavor = "current_thread")]
-// async fn main() {
-//     proc_set_prio();
-//     // init_buf();
-//     let c1 = MyCountor::new(0);
-//     let c2 = MyCountor::new(1);
-//     let c3 = MyCountor::new(2);
-//     let c4 = MyCountor::new(3);
-//     let c5 = MyCountor::new(4);
-//     let c6 = MyCountor::new(5);
-//     let c7 = MyCountor::new(6);
-//     let c8 = MyCountor::new(7);
-//     let c9 = MyCountor::new(8);
-//     let c10 = MyCountor::new(9);
-//     let c11 = MyCountor::new(10);
-//     let c12 = MyCountor::new(11);
-//     let c13 = MyCountor::new(12);
-//     let c14 = MyCountor::new(13);
-//     let c15 = MyCountor::new(14);
-//     let c16 = MyCountor::new(15);
-//     let (delta1, delta2, ..) =
-//         tokio::join!(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16);
-//     // println!(
-//     //     "TIMES {} delta1 {} delta2 {}",
-//     //     TIMES,
-//     //     delta1 / TIMES as i32 / NUM as i32,
-//     //     delta2 / TIMES as i32 / NUM as i32,
-//     // );
-// }
-
-pub mod executor;
 
 fn main() {
     proc_set_prio();
