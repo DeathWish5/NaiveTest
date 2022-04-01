@@ -10,8 +10,8 @@ use {
         task::{Context, Poll},
     },
     spin::Mutex,
-    woke::{waker_ref, Woke},
     std::collections::VecDeque,
+    woke::{waker_ref, Woke},
 };
 
 use super::MAX_TASKS;
@@ -57,7 +57,7 @@ impl Task {
 impl Executor {
     pub fn new() -> Self {
         Self {
-            tasks: (0..MAX_TASKS).map(|i| NONE_TASK).collect(),
+            tasks: (0..MAX_TASKS).map(|_| NONE_TASK).collect(),
             unused: (0..MAX_TASKS).collect(),
             ready: Arc::new(Mutex::new(VecDeque::with_capacity(MAX_TASKS))),
             current: usize::MAX,

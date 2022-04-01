@@ -14,9 +14,32 @@ pub fn l3(NN: usize, i: usize, j: usize, m1: &Matrix, m2: &Matrix, m3: &mut Matr
 }
 
 #[inline(never)]
+pub fn l3_stack(nn: usize, i: usize, j: usize, m1: &Matrix, m2: &Matrix, m3: &mut Matrix) {
+    let mut row: [usize; N] = [0; N]; // unsafe { MaybeUninit::<[usize; N]>::uninit().assume_init() };
+    let mut col: [usize; N] = [0; N]; // unsafe { MaybeUninit::<[usize; N]>::uninit().assume_init() };
+    for k in 0..nn {
+        row[k] = m1.data[i * nn + k] & 0xFFFF;
+        col[k] = m2.data[k * nn + j] & 0xFFFF;
+    }
+    let sum = row
+        .iter()
+        .zip(col.iter())
+        .map(|data| data.0 * data.1)
+        .fold(0, |x, accel| x + accel);
+    m3.data[i * nn + j] = (m3.data[i * nn + j] & 0xFFFF) + (sum & 0xFFFF);
+}
+
+#[inline(never)]
 pub fn l2(NN: usize, i: usize, m1: &Matrix, m2: &Matrix, m3: &mut Matrix) {
     for j in 0..NN {
         l3(NN, i, j, m1, m2, m3);
+    }
+}
+
+#[inline(never)]
+pub fn l2_stack(NN: usize, i: usize, m1: &Matrix, m2: &Matrix, m3: &mut Matrix) {
+    for j in 0..NN {
+        l3_stack(NN, i, j, m1, m2, m3);
     }
 }
 
@@ -28,10 +51,25 @@ pub fn l1(NN: usize, m1: &Matrix, m2: &Matrix, m3: &mut Matrix) {
 }
 
 #[inline(never)]
+pub fn l1_stack(NN: usize, m1: &Matrix, m2: &Matrix, m3: &mut Matrix) {
+    for i in 0..NN {
+        l2_stack(NN, i, m1, m2, m3);
+    }
+}
+
+#[inline(never)]
 pub fn fdot(m1: &Matrix, m2: &Matrix, m3: &mut Matrix) -> MyResult {
     size_check(m1, m2, m3)?;
     let NN = m1.n;
     l1(NN, m1, m2, m3);
+    Ok(())
+}
+
+#[inline(never)]
+pub fn fdot_stack(m1: &Matrix, m2: &Matrix, m3: &mut Matrix) -> MyResult {
+    size_check(m1, m2, m3)?;
+    let NN = m1.n;
+    l1_stack(NN, m1, m2, m3);
     Ok(())
 }
 

@@ -1,6 +1,9 @@
 use gettime::*;
-use matrix::{N, Matrix, matrix_random, dot, function::{fdot as fdot1, fdot_slow as fdot2}};
-use std::result::Result;
+use matrix::{
+    dot, dot_stack,
+    function::{fdot, fdot_stack},
+    matrix_random, Matrix, N,
+};
 
 const CACHE_SIZE: usize = 384 * 1000;
 const TIMES: usize = 10;
@@ -35,16 +38,20 @@ fn main() {
     );
     test(
         || {
-            fdot1(&m1, &m2, &mut m3).unwrap();
+            fdot(&m1, &m2, &mut m3).unwrap();
         },
         "FUNC",
     );
-    // TOO SLOW ...
-
-    // test(
-    //     || {
-    //         fdot2(&m1, &m2, &mut m3).unwrap();
-    //     },
-    //     "FUNC2",
-    // );
+    test(
+        || {
+            dot_stack(&m1, &m2, &mut m3).unwrap();
+        },
+        "BASE STACK",
+    );
+    test(
+        || {
+            fdot_stack(&m1, &m2, &mut m3).unwrap();
+        },
+        "FUNC STACK",
+    );
 }
